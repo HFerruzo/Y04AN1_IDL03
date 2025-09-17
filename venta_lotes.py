@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import joblib
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score
@@ -16,11 +16,12 @@ def load_data(path: str):
 @st.cache_resource
 def load_model(path: str):
     """Usamos cache_resource en vez de cache_data para objetos grandes (como modelos)."""
-    return joblib.load(path)
+    with open(path, "rb") as f:
+        return pickle.load(f)
 
 # Paths
 DATA_PATH = "data_sample.csv"
-MODEL_PATH = "model.pkl"
+MODEL_PATH = "model.pkl"   # ahora debe estar guardado con pickle
 
 # Cargar datos y modelo
 df = load_data(DATA_PATH)
@@ -28,7 +29,7 @@ df = load_data(DATA_PATH)
 try:
     model = load_model(MODEL_PATH)
 except Exception as e:
-    st.error(f"No se pudo cargar el modelo. Verifica compatibilidad de scikit-learn/joblib. Error: {e}")
+    st.error(f"No se pudo cargar el modelo. Verifica compatibilidad. Error: {e}")
     st.stop()
 
 # Sidebar
@@ -59,11 +60,9 @@ elif menu == "Análisis Exploratorio":
 
 elif menu == "Modelo de Clasificación":
     st.title("Modelo de Clasificación - Resultados")
-    # preparar features igual que en entrenamiento
     X = df.drop(columns=[c for c in ['cliente_id','lote_id','compra_final'] if c in df.columns], errors='ignore')
     X = pd.get_dummies(X, drop_first=True)
 
-    # alinear features con el modelo
     if hasattr(model, 'feature_names_in_'):
         for col in model.feature_names_in_:
             if col not in X.columns:
